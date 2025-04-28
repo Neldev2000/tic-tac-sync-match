@@ -6,16 +6,17 @@ import { Label } from "@/components/ui/label";
 import GameContainer from "@/components/GameContainer";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { generateGameCode } from "@/utils/gameUtils";
+import { createGame, joinGame, getGameByCode } from "@/services/gameService";
 
 const WelcomeScreen = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleCreateGame = () => {
+  const handleCreateGame = async () => {
     if (!playerName.trim()) {
       toast({
         title: "Nombre requerido",
@@ -24,17 +25,30 @@ const WelcomeScreen = () => {
       return;
     }
 
-    const newGameCode = generateGameCode();
-    navigate(`/game/${newGameCode}`, { 
-      state: { 
-        playerName, 
-        isCreator: true,
-        gameCode: newGameCode
-      } 
-    });
+    setIsLoading(true);
+    try {
+      const { game, player } = await createGame(playerName);
+      navigate(`/game/${game.code}`, { 
+        state: { 
+          playerId: player.id,
+          playerName, 
+          symbol: player.symbol,
+          isCreator: true,
+          gameId: game.id
+        } 
+      });
+    } catch (error) {
+      console.error('Error creating game:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear la partida. Intenta de nuevo más tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleJoinGame = () => {
+  const handleJoinGame = async () => {
     if (!playerName.trim()) {
       toast({
         title: "Nombre requerido",
@@ -51,12 +65,38 @@ const WelcomeScreen = () => {
       return;
     }
 
-    navigate(`/game/${gameCode}`, { 
-      state: { 
-        playerName, 
-        isCreator: false
-      } 
-    });
+    setIsLoading(true);
+    try {
+      // First check if game exists
+      const existingGame = await getGameByCode(gameCode);
+      if (!existingGame) {
+        toast({
+          title: "Partida no encontrada",
+          description: "El código ingresado no corresponde a ninguna partida activa",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const { game, player } = await joinGame(gameCode, playerName);
+      navigate(`/game/${game.code}`, { 
+        state: { 
+          playerId: player.id,
+          playerName, 
+          symbol: player.symbol,
+          isCreator: false,
+          gameId: game.id
+        } 
+      });
+    } catch (error: any) {
+      console.error('Error joining game:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo unir a la partida. Intenta de nuevo más tarde.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,7 +105,7 @@ const WelcomeScreen = () => {
         <h1 className="text-3xl font-semibold tracking-tight mb-2">
           Tic Tac Toe
         </h1>
-        <p className="text-apple-gray">
+        <p className="text-gray-500">
           {isJoining ? "Únete a una partida" : "Crea o únete a una partida"}
         </p>
       </div>
@@ -101,26 +141,36 @@ const WelcomeScreen = () => {
         <div className="flex flex-col gap-3">
           {isJoining ? (
             <>
-              <Button onClick={handleJoinGame} className="apple-button">
-                Unirse
+              <Button 
+                onClick={handleJoinGame} 
+                className="apple-button"
+                disabled={isLoading}
+              >
+                {isLoading ? "Uniéndose..." : "Unirse"}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsJoining(false)}
                 className="border border-gray-300 hover:bg-gray-50"
+                disabled={isLoading}
               >
                 Crear partida
               </Button>
             </>
           ) : (
             <>
-              <Button onClick={handleCreateGame} className="apple-button">
-                Crear partida
+              <Button 
+                onClick={handleCreateGame} 
+                className="apple-button"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creando..." : "Crear partida"}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsJoining(true)}
                 className="border border-gray-300 hover:bg-gray-50"
+                disabled={isLoading}
               >
                 Unirse a partida
               </Button>

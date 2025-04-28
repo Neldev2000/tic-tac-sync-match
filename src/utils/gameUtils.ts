@@ -61,3 +61,17 @@ export const checkWinner = (squares: Array<string | null>): string | null => {
 export const isBoardFull = (squares: Array<string | null>): boolean => {
   return squares.every((square) => square !== null);
 };
+
+/**
+ * Convierte un string del tablero a un array
+ */
+export const boardStringToArray = (boardString: string): Array<string | null> => {
+  return boardString.split('').map(cell => cell === '_' ? null : cell);
+};
+
+/**
+ * Convierte un array del tablero a un string
+ */
+export const boardArrayToString = (board: Array<string | null>): string => {
+  return board.map(cell => cell || '_').join('');
+};

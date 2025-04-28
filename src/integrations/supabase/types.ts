@@ -9,7 +9,113 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          board: string
+          code: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          winner: string | null
+        }
+        Insert: {
+          board?: string
+          code: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          winner?: string | null
+        }
+        Update: {
+          board?: string
+          code?: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      moves: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          player_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          player_id: string
+          position: number
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          player_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moves_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moves_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          game_id: string
+          id: string
+          is_creator: boolean
+          joined_at: string
+          name: string
+          symbol: string
+          user_id: string | null
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          is_creator?: boolean
+          joined_at?: string
+          name: string
+          symbol: string
+          user_id?: string | null
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          is_creator?: boolean
+          joined_at?: string
+          name?: string
+          symbol?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
