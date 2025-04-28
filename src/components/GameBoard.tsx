@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GameContainer from "@/components/GameContainer";
 import { useToast } from "@/components/ui/use-toast";
-import { checkWinner, isBoardFull } from "@/utils/gameUtils";
+import { checkWinner, isBoardFull, boardStringToArray } from "@/utils/gameUtils";
 import { getGameByCode, getGamePlayers, makeMove, subscribeToGame, subscribeToPlayers, updateGameStatus } from "@/services/gameService";
 import { Game, Player } from "@/types/supabase";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,10 +56,22 @@ const GameBoard = () => {
 
         // Convert board string to array
         if (gameData.board) {
-          const boardArray = gameData.board.split('').map(cell => 
-            cell === '_' ? null : cell
-          );
+          const boardArray = boardStringToArray(gameData.board);
           setBoard(boardArray);
+          
+          // Set current turn based on board state
+          const xCount = boardArray.filter(cell => cell === 'X').length;
+          const oCount = boardArray.filter(cell => cell === 'O').length;
+          setCurrentTurn(xCount <= oCount ? 'X' : 'O');
+
+          // Check if game is already won
+          const winnerSymbol = checkWinner(boardArray);
+          if (winnerSymbol) {
+            const winningPlayer = players.find(p => p.symbol === winnerSymbol);
+            setWinner(winningPlayer?.id || null);
+          } else if (isBoardFull(boardArray)) {
+            setWinner('empate');
+          }
         }
 
         // Get players
@@ -76,20 +87,6 @@ const GameBoard = () => {
 
         // Set waiting state if we don't have two players yet
         setIsWaiting(playersData.length < 2);
-        
-        // Set current turn based on board state
-        const xCount = boardArray.filter(cell => cell === 'X').length;
-        const oCount = boardArray.filter(cell => cell === 'O').length;
-        setCurrentTurn(xCount <= oCount ? 'X' : 'O');
-
-        // Check if game is already won
-        const winnerSymbol = checkWinner(boardArray);
-        if (winnerSymbol) {
-          const winningPlayer = playersData.find(p => p.symbol === winnerSymbol);
-          setWinner(winningPlayer?.id || null);
-        } else if (isBoardFull(boardArray)) {
-          setWinner('empate');
-        }
 
       } catch (error) {
         console.error('Error loading game:', error);
@@ -115,9 +112,7 @@ const GameBoard = () => {
       
       // Update board
       if (updatedGame.board) {
-        const boardArray = updatedGame.board.split('').map(cell => 
-          cell === '_' ? null : cell
-        );
+        const boardArray = boardStringToArray(updatedGame.board);
         setBoard(boardArray);
         
         // Update current turn

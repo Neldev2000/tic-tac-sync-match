@@ -30,7 +30,11 @@ export const createGame = async (playerName: string): Promise<{ game: Game; play
   
   if (playerError) throw playerError;
 
-  return { game: gameData, player: playerData, gameCode };
+  return { 
+    game: gameData as Game, 
+    player: playerData as Player, 
+    gameCode 
+  };
 };
 
 // Join an existing game
@@ -76,7 +80,10 @@ export const joinGame = async (gameCode: string, playerName: string): Promise<{ 
     .update({ status: 'active' })
     .eq('id', gameData.id);
 
-  return { game: gameData, player: playerData };
+  return { 
+    game: gameData as Game, 
+    player: playerData as Player 
+  };
 };
 
 // Make a move in the game
@@ -128,7 +135,7 @@ export const getGameByCode = async (gameCode: string): Promise<Game | null> => {
     .single();
   
   if (error) return null;
-  return data;
+  return data as Game;
 };
 
 // Get players in a game
@@ -139,7 +146,7 @@ export const getGamePlayers = async (gameId: string): Promise<Player[]> => {
     .eq('game_id', gameId);
   
   if (error) throw error;
-  return data || [];
+  return (data || []) as Player[];
 };
 
 // Subscribe to game changes
