@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +12,15 @@ const WelcomeScreen = () => {
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Reset error on mount
+  useEffect(() => {
+    console.log("WelcomeScreen mounted");
+    setError(null);
+  }, []);
 
   const handleCreateGame = async () => {
     if (!playerName.trim()) {
@@ -26,6 +32,7 @@ const WelcomeScreen = () => {
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const { game, player } = await createGame(playerName);
       navigate(`/game/${game.code}`, { 
@@ -39,6 +46,7 @@ const WelcomeScreen = () => {
       });
     } catch (error) {
       console.error('Error creating game:', error);
+      setError('No se pudo crear la partida. Intenta de nuevo más tarde.');
       toast({
         title: "Error",
         description: "No se pudo crear la partida. Intenta de nuevo más tarde.",
@@ -66,6 +74,7 @@ const WelcomeScreen = () => {
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       // First check if game exists
       const existingGame = await getGameByCode(gameCode);
@@ -90,6 +99,7 @@ const WelcomeScreen = () => {
       });
     } catch (error: any) {
       console.error('Error joining game:', error);
+      setError(error.message || "No se pudo unir a la partida. Intenta de nuevo más tarde.");
       toast({
         title: "Error",
         description: error.message || "No se pudo unir a la partida. Intenta de nuevo más tarde.",
@@ -98,6 +108,28 @@ const WelcomeScreen = () => {
       setIsLoading(false);
     }
   };
+
+  // If there was an error loading the component, display a fallback UI
+  if (error) {
+    return (
+      <GameContainer className="animate-fade-in">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight mb-2">
+            Oops! Algo salió mal
+          </h1>
+          <p className="text-red-500 mb-4">
+            {error}
+          </p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="apple-button"
+          >
+            Intentar de nuevo
+          </Button>
+        </div>
+      </GameContainer>
+    );
+  }
 
   return (
     <GameContainer className="animate-fade-in">

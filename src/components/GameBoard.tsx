@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import GameContainer from "@/components/GameContainer";
 import { useToast } from "@/components/ui/use-toast";
 import { checkWinner, isBoardFull, boardStringToArray } from "@/utils/gameUtils";
-import { getGameByCode, getGamePlayers, makeMove, subscribeToGame, subscribeToPlayers, updateGameStatus } from "@/services/gameService";
+import { 
+  getGameByCode, 
+  getGamePlayers, 
+  makeMove, 
+  subscribeToGame, 
+  subscribeToPlayers, 
+  updateGameStatus,
+  unsubscribe 
+} from "@/services/gameService";
 import { Game, Player } from "@/types/supabase";
-import { supabase } from "@/integrations/supabase/client";
 
 interface LocationState {
   playerId: string;
@@ -68,7 +75,7 @@ const GameBoard = () => {
           const winnerSymbol = checkWinner(boardArray);
           if (winnerSymbol) {
             const winningPlayer = players.find(p => p.symbol === winnerSymbol);
-            setWinner(winningPlayer?.id || null);
+            setWinner(winnerSymbol);
           } else if (isBoardFull(boardArray)) {
             setWinner('empate');
           }
@@ -196,8 +203,8 @@ const GameBoard = () => {
 
     // Cleanup subscriptions when component unmounts
     return () => {
-      supabase.removeChannel(gameChannel);
-      supabase.removeChannel(playersChannel);
+      if (gameChannel) unsubscribe(gameChannel);
+      if (playersChannel) unsubscribe(playersChannel);
     };
   }, [game, currentPlayer, players, toast]);
 
@@ -251,19 +258,12 @@ const GameBoard = () => {
     if (!game) return;
     
     try {
-      // Reset game state
+      // Reset game state by updating the game
+      await updateGameStatus(game.id, 'active', null);
+      
+      // Also update the board to empty
       const newBoard = Array(9).fill('_').join('');
-      const { error } = await supabase
-        .from('games')
-        .update({
-          board: newBoard,
-          status: 'active',
-          winner: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', game.id);
-        
-      if (error) throw error;
+      await makeMove(game.id, currentPlayer?.id || '', -1, newBoard);
       
       // Clear local state
       setBoard(Array(9).fill(null));
